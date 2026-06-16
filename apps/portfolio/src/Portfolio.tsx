@@ -67,8 +67,6 @@ function Portfolio() {
   const [activeBlogIndex, setActiveBlogIndex] = useState(0);
 
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
-  const [transitioningTheme, setTransitioningTheme] = useState<string | null>(null);
-  const toggleBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -76,16 +74,7 @@ function Portfolio() {
   }, [theme]);
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTransitioningTheme(nextTheme);
-    
-    setTimeout(() => {
-      setTheme(nextTheme);
-    }, 300);
-
-    setTimeout(() => {
-      setTransitioningTheme(null);
-    }, 1000);
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
   const { scrollY } = useScroll();
@@ -94,12 +83,10 @@ function Portfolio() {
   const nameSize = useTransform(scrollY, [0, 50], ["2.5rem", "1.5rem"]);
 
   const bgOpacity = useTransform(scrollY, [0, 50], [0, 0.95]);
-  const headerBgColor = theme === 'light' ? '255, 255, 255' : '30, 30, 30';
-  const dynamicHeaderBg = useMotionTemplate`rgba(${headerBgColor}, ${bgOpacity})`;
+  const dynamicHeaderBg = useMotionTemplate`rgba(var(--header-bg-rgb), ${bgOpacity})`;
 
   const borderOpacity = useTransform(scrollY, [0, 50], [0, 0.1]);
-  const borderColor = theme === 'light' ? '0, 0, 0' : '255, 255, 255';
-  const dynamicHeaderBorder = useMotionTemplate`1px solid rgba(${borderColor}, ${borderOpacity})`;
+  const dynamicHeaderBorder = useMotionTemplate`1px solid rgba(var(--header-border-rgb), ${borderOpacity})`;
 
   useEffect(() => {
     const loadData = async () => {
@@ -149,26 +136,6 @@ function Portfolio() {
 
   return (
     <div className="portfolio-wrapper" style={{ paddingTop: '130px' }}>
-      <AnimatePresence>
-        {transitioningTheme && (
-          <motion.div
-            key="theme-transition"
-            className="theme-transition-overlay"
-            initial={{ clipPath: `circle(0% at ${toggleBtnRef.current?.getBoundingClientRect().left || 50}px ${toggleBtnRef.current?.getBoundingClientRect().top || 50}px)` }}
-            animate={{ clipPath: `circle(150% at ${toggleBtnRef.current?.getBoundingClientRect().left || 50}px ${toggleBtnRef.current?.getBoundingClientRect().top || 50}px)` }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-            style={{ 
-              backgroundColor: transitioningTheme === 'light' ? '#f5f5f5' : '#121212',
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              pointerEvents: 'none'
-            }}
-          />
-        )}
-      </AnimatePresence>
-
       <motion.header
         style={{
           height: headerHeight,
@@ -203,7 +170,6 @@ function Portfolio() {
               </a>
             )}
             <button 
-              ref={toggleBtnRef}
               onClick={toggleTheme} 
               style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.5rem' }}
               title="Toggle Light/Dark Mode"

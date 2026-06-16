@@ -6,6 +6,8 @@
   --placeholder-bg: rgba(255, 255, 255, 0.05);
   --placeholder-icon: rgba(255, 255, 255, 0.1);
   --card-border: #333;
+  --header-bg-rgb: 30, 30, 30;
+  --header-border-rgb: 255, 255, 255;
 }
 
 [data-theme='light'] {
@@ -15,6 +17,8 @@
   --placeholder-bg: rgba(0, 0, 0, 0.05);
   --placeholder-icon: rgba(0, 0, 0, 0.1);
   --card-border: #ddd;
+  --header-bg-rgb: 255, 255, 255;
+  --header-border-rgb: 0, 0, 0;
 }
 
 body {
@@ -23,6 +27,22 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
   padding: 0;
+}
+
+body,
+.portfolio-wrapper,
+.card,
+.portfolio-footer,
+header,
+a,
+button,
+span,
+h1, h2, h3, h4, p,
+.excerpt-content,
+.contact-info,
+.social-links a,
+.cv-download {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 a {
@@ -235,11 +255,3 @@ section {
   font-size: 1.5rem;
 }
 
-/* Wave Theme Transition */
-.theme-transition-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  background-color: var(--bg-color);
-}

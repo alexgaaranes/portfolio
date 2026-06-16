@@ -2,7 +2,13 @@
   "name": "sample-proj",
   "private": true,
   "scripts": {
-    "nx": "nx"
+    "nx": "nx",
+    "dev": "nx run-many -t serve dev",
+    "dev:backend": "nx run backend:serve",
+    "dev:portfolio": "nx run portfolio:dev",
+    "dev:cms": "nx run cms:dev",
+    "migrate": "nx run backend:migrate",
+    "makemigrations": "nx run backend:makemigrations"
   },
   "devDependencies": {
     "nx": "latest",
