@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { getProjects, getBlogs, getProfile } from './api';
+import { useEffect, useState, useMemo } from 'react';
+import { getProjects, getBlogs, getProfile, getProjectDetail, getBlogDetail } from './api';
+import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Modal from './components/Modal';
@@ -55,13 +56,16 @@ const CarouselCard = ({ item, isActive, index, openModal }: any) => {
 };
 
 function Portfolio() {
-  const [projects, setProjects] = useState([]);
-  const [blogs, setBlogs] = useState([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [nextProjectsUrl, setNextProjectsUrl] = useState<string | null>(null);
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [nextBlogsUrl, setNextBlogsUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const [activeProjectIndex, setActiveProjectIndex] = useState(0);
   const [activeBlogIndex, setActiveBlogIndex] = useState(0);
@@ -96,8 +100,10 @@ function Portfolio() {
           getBlogs(),
           getProfile()
         ]);
-        setProjects(projRes.data || []);
-        setBlogs(blogRes.data || []);
+        setProjects(projRes.data.results || []);
+        setNextProjectsUrl(projRes.data.next || null);
+        setBlogs(blogRes.data.results || []);
+        setNextBlogsUrl(blogRes.data.next || null);
         setProfile(profRes.data || null);
       } catch (err: any) {
         console.error("Fetch error:", err);
@@ -107,9 +113,42 @@ function Portfolio() {
     loadData();
   }, []);
 
-  const openModal = (item: any) => {
-    setSelectedItem(item);
+  const loadMoreProjects = async () => {
+    if (!nextProjectsUrl) return;
+    try {
+      const res = await axios.get(nextProjectsUrl);
+      setProjects((prev) => [...prev, ...(res.data.results || [])]);
+      setNextProjectsUrl(res.data.next || null);
+    } catch (err) {
+      console.error("Failed to load more projects", err);
+    }
+  };
+
+  const loadMoreBlogs = async () => {
+    if (!nextBlogsUrl) return;
+    try {
+      const res = await axios.get(nextBlogsUrl);
+      setBlogs((prev) => [...prev, ...(res.data.results || [])]);
+      setNextBlogsUrl(res.data.next || null);
+    } catch (err) {
+      console.error("Failed to load more blogs", err);
+    }
+  };
+
+  const openModal = async (item: any) => {
     setIsModalOpen(true);
+    setSelectedItem(item);
+    setIsLoadingDetail(true);
+    try {
+      const res = item.title 
+        ? await getProjectDetail(item.id) 
+        : await getBlogDetail(item.id);
+      setSelectedItem(res.data);
+    } catch (err) {
+      console.error("Failed to load item detail", err);
+    } finally {
+      setIsLoadingDetail(false);
+    }
   };
 
   const lastUpdated = useMemo(() => {
@@ -198,27 +237,36 @@ function Portfolio() {
           <div className="section-divider" />
           <h2>Projects</h2>
           {projects.length === 0 ? <p style={{ opacity: 0.5 }}>No projects added yet.</p> : (
-            <Swiper
-              className="list-carousel"
-              modules={[Autoplay]}
-              spaceBetween={30}
-              slidesPerView={'auto'}
-              centeredSlides={true}
-              onSlideChange={(swiper) => setActiveProjectIndex(swiper.activeIndex)}
-            >
-              {projects.map((project: any, index: number) => (
-                <SwiperSlide key={project.id} data-id={project.id}>
-                  {({ isActive }) => (
-                    <CarouselCard 
-                      item={project} 
-                      isActive={isActive} 
-                      index={index} 
-                      openModal={openModal} 
-                    />
-                  )}
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <>
+              <Swiper
+                className="list-carousel"
+                modules={[Autoplay]}
+                spaceBetween={30}
+                slidesPerView={'auto'}
+                centeredSlides={true}
+                onSlideChange={(swiper) => setActiveProjectIndex(swiper.activeIndex)}
+              >
+                {projects.map((project: any, index: number) => (
+                  <SwiperSlide key={project.id} data-id={project.id}>
+                    {({ isActive }) => (
+                      <CarouselCard 
+                        item={project} 
+                        isActive={isActive} 
+                        index={index} 
+                        openModal={openModal} 
+                      />
+                    )}
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+              {nextProjectsUrl && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-2rem', marginBottom: '2rem' }}>
+                  <button className="load-more-btn" onClick={loadMoreProjects}>
+                    Load More Projects
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
 
@@ -226,27 +274,36 @@ function Portfolio() {
           <div className="section-divider" />
           <h2>Blog</h2>
           {blogs.length === 0 ? <p style={{ opacity: 0.5 }}>No blog posts yet.</p> : (
-            <Swiper
-              className="list-carousel"
-              modules={[Autoplay]}
-              spaceBetween={30}
-              slidesPerView={'auto'}
-              centeredSlides={true}
-              onSlideChange={(swiper) => setActiveBlogIndex(swiper.activeIndex)}
-            >
-              {blogs.map((blog: any, index: number) => (
-                <SwiperSlide key={blog.id} data-id={blog.id}>
-                  {({ isActive }) => (
-                    <CarouselCard 
-                      item={blog} 
-                      isActive={isActive} 
-                      index={index} 
-                      openModal={openModal} 
-                    />
-                  )}
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <>
+              <Swiper
+                className="list-carousel"
+                modules={[Autoplay]}
+                spaceBetween={30}
+                slidesPerView={'auto'}
+                centeredSlides={true}
+                onSlideChange={(swiper) => setActiveBlogIndex(swiper.activeIndex)}
+              >
+                {blogs.map((blog: any, index: number) => (
+                  <SwiperSlide key={blog.id} data-id={blog.id}>
+                    {({ isActive }) => (
+                      <CarouselCard 
+                        item={blog} 
+                        isActive={isActive} 
+                        index={index} 
+                        openModal={openModal} 
+                      />
+                    )}
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+              {nextBlogsUrl && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-2rem', marginBottom: '2rem' }}>
+                  <button className="load-more-btn" onClick={loadMoreBlogs}>
+                    Load More Posts
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>
@@ -267,35 +324,43 @@ function Portfolio() {
         {isModalOpen && selectedItem && (
           <Modal onClose={() => setIsModalOpen(false)}>
             <div className="modal-inner">
-              {selectedItem.images && selectedItem.images.length > 0 && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <Swiper
-                    modules={[Navigation, Pagination, Autoplay]}
-                    navigation
-                    pagination={{ clickable: true }}
-                    loop={true}
-                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                    spaceBetween={30}
-                    slidesPerView={1}
-                  >
-                    {selectedItem.images.map((img: any, idx: number) => (
-                      <SwiperSlide key={img.id || idx}>
-                        <img src={img.image_base64} alt="" style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
+              {isLoadingDetail ? (
+                <div style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                  <h3 style={{ color: 'var(--accent-color)' }}>Loading details...</h3>
                 </div>
-              )}
-              <h2>{selectedItem.title || selectedItem.headline}</h2>
-              <div className="rich-content">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {selectedItem.description || selectedItem.body}
-                </ReactMarkdown>
-              </div>
-              {selectedItem.link && (
-                <a href={selectedItem.link} target="_blank" rel="noreferrer" className="btn" style={{ display: 'inline-block', marginTop: '2rem', border: '1px solid #e53935', padding: '0.5rem 1rem', borderRadius: '4px' }}>
-                  Visit Link &rarr;
-                </a>
+              ) : (
+                <>
+                  {selectedItem.images && selectedItem.images.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                      <Swiper
+                        modules={[Navigation, Pagination, Autoplay]}
+                        navigation
+                        pagination={{ clickable: true }}
+                        loop={true}
+                        autoplay={{ delay: 3000, disableOnInteraction: false }}
+                        spaceBetween={30}
+                        slidesPerView={1}
+                      >
+                        {selectedItem.images.map((img: any, idx: number) => (
+                          <SwiperSlide key={img.id || idx}>
+                            <img src={img.image_base64} alt="" style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
+                          </SwiperSlide>
+                        ))}
+                      </Swiper>
+                    </div>
+                  )}
+                  <h2>{selectedItem.title || selectedItem.headline}</h2>
+                  <div className="rich-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {selectedItem.description || selectedItem.body}
+                    </ReactMarkdown>
+                  </div>
+                  {selectedItem.link && (
+                    <a href={selectedItem.link} target="_blank" rel="noreferrer" className="btn" style={{ display: 'inline-block', marginTop: '2rem', border: '1px solid #e53935', padding: '0.5rem 1rem', borderRadius: '4px' }}>
+                      Visit Link &rarr;
+                    </a>
+                  )}
+                </>
               )}
             </div>
           </Modal>

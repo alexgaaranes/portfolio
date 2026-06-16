@@ -14,11 +14,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const login = (credentials: any) => axios.post(`${API_URL}/token/`, credentials);
-export const getProjects = () => api.get('/projects/');
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      // Only redirect if not already on the login page
+      if (!window.location.pathname.endsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const login = (credentials: { username: string; password?: string; totp_code?: string; totp_secret_setup?: string }) => 
+  axios.post(`${API_URL}/token/`, credentials);
+
+export const verifyToken = (token: string) => 
+  axios.post(`${API_URL}/token/verify/`, { token });
+
+export const getProjects = () => api.get('/projects/?page_size=100');
 export const createProject = (data: any) => api.post('/projects/', data);
 export const deleteProject = (id: number) => api.delete(`/projects/${id}/`);
-export const getBlogs = () => api.get('/blogs/');
+export const getBlogs = () => api.get('/blogs/?page_size=100');
 export const createBlog = (data: any) => api.post('/blogs/', data);
 export const deleteBlog = (id: number) => api.delete(`/blogs/${id}/`);
 export const getProfile = () => api.get('/profile/');

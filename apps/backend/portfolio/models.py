@@ -9,6 +9,7 @@ class Profile(models.Model):
     github_url = models.URLField(blank=True, null=True)
     cv_file = models.FileField(upload_to='cvs/', blank=True, null=True)
     summary = models.TextField(blank=True, null=True) # stores Markdown
+    totp_secret = models.CharField(max_length=32, blank=True, null=True)
 
     def __str__(self):
         return self.name

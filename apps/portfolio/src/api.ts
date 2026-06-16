@@ -9,5 +9,7 @@ const api = axios.create({
 export const getProjects = () => api.get('/projects/');
 export const getBlogs = () => api.get('/blogs/');
 export const getProfile = () => api.get('/profile/');
+export const getProjectDetail = (id: number) => api.get(`/projects/${id}/`);
+export const getBlogDetail = (id: number) => api.get(`/blogs/${id}/`);
 
 export default api;

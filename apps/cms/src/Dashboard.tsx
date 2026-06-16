@@ -7,6 +7,102 @@ import remarkGfm from 'remark-gfm';
 import ReactDOMServer from 'react-dom/server';
 import './CMS.css';
 
+const convertBase64ToBlobUrls = async (text: string): Promise<string> => {
+  if (!text) return text;
+  const regex = /!\[(.*?)\]\((data:image\/[a-zA-Z+.-]+;base64,[a-zA-Z0-9+/=]+)\)/g;
+  let match;
+  let resultText = text;
+  
+  const matches: { full: string; alt: string; dataUrl: string }[] = [];
+  const tempRegex = new RegExp(regex);
+  while ((match = tempRegex.exec(text)) !== null) {
+    matches.push({ full: match[0], alt: match[1], dataUrl: match[2] });
+  }
+
+  for (const m of matches) {
+    try {
+      const res = await fetch(m.dataUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      resultText = resultText.replace(m.full, `![${m.alt}](${blobUrl})`);
+    } catch (err) {
+      console.error("Failed to convert base64 image to blob URL:", err);
+    }
+  }
+  return resultText;
+};
+
+const convertBlobUrlsToBase64 = async (text: string): Promise<string> => {
+  if (!text) return text;
+  const regex = /!\[(.*?)\]\((blob:https?:\/\/[^\s)]+)\)/g;
+  let match;
+  let resultText = text;
+
+  const matches: { full: string; alt: string; blobUrl: string }[] = [];
+  const tempRegex = new RegExp(regex);
+  while ((match = tempRegex.exec(text)) !== null) {
+    matches.push({ full: match[0], alt: match[1], blobUrl: match[2] });
+  }
+
+  for (const m of matches) {
+    try {
+      const res = await fetch(m.blobUrl);
+      const blob = await res.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      resultText = resultText.replace(m.full, `![${m.alt}](${base64})`);
+    } catch (err) {
+      console.error("Failed to convert blob URL back to base64:", err);
+    }
+  }
+  return resultText;
+};
+
+const compressImage = (file: File): Promise<File> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1000;
+        const MAX_HEIGHT = 1000;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: "image/jpeg" }));
+          } else {
+            resolve(file);
+          }
+        }, "image/jpeg", 0.75);
+      };
+    };
+  });
+};
+
 function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [blogs, setBlogs] = useState([]);
@@ -40,18 +136,15 @@ function Dashboard() {
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*';
-          input.onchange = () => {
+          input.onchange = async () => {
             const file = input.files?.[0];
             if (file) {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const b64 = e.target?.result;
-                const cm = editor.codemirror;
-                const doc = cm.getDoc();
-                const cursor = doc.getCursor();
-                doc.replaceRange(`\n![image](${b64})\n`, cursor);
-              };
-              reader.readAsDataURL(file);
+              const compressed = await compressImage(file);
+              const blobUrl = URL.createObjectURL(compressed);
+              const cm = editor.codemirror;
+              const doc = cm.getDoc();
+              const cursor = doc.getCursor();
+              doc.replaceRange(`\n![image](${blobUrl})\n`, cursor);
             }
           };
           input.click();
@@ -82,8 +175,8 @@ function Dashboard() {
         getBlogs(),
         getProfile(),
       ]);
-      setProjects(projRes.data);
-      setBlogs(blogRes.data);
+      setProjects(projRes.data.results || []);
+      setBlogs(blogRes.data.results || []);
       setProfile(profRes.data || {});
     } catch (err) {
       console.error('Error fetching data', err);
@@ -122,10 +215,20 @@ function Dashboard() {
     }
   };
 
-  const handleOpenModal = (type: 'project' | 'blog', item: any = null) => {
+  const handleOpenModal = async (type: 'project' | 'blog', item: any = null) => {
     setModalType(type);
     setEditingItem(item);
-    setFormData(item || { title: '', headline: '', description: '', body: '', link: '' });
+    
+    let initialFormData = item ? { ...item } : { title: '', headline: '', description: '', body: '', link: '' };
+    if (item) {
+      if (type === 'project' && item.description) {
+        initialFormData.description = await convertBase64ToBlobUrls(item.description);
+      } else if (type === 'blog' && item.body) {
+        initialFormData.body = await convertBase64ToBlobUrls(item.body);
+      }
+    }
+    
+    setFormData(initialFormData);
     setPendingImages([]);
     setIsModalOpen(true);
   };
@@ -170,8 +273,10 @@ function Dashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let finalFormData = { ...formData };
       if (modalType === 'project') {
-        const payload = { ...formData, link: ensureProtocol(formData.link) };
+        finalFormData.description = await convertBlobUrlsToBase64(formData.description);
+        const payload = { ...finalFormData, link: ensureProtocol(finalFormData.link) };
         if (editingItem) {
           await api.patch(`/projects/${editingItem.id}/`, payload);
           await uploadImagesForId('projects', editingItem.id);
@@ -180,11 +285,12 @@ function Dashboard() {
           await uploadImagesForId('projects', res.data.id);
         }
       } else {
+        finalFormData.body = await convertBlobUrlsToBase64(formData.body);
         if (editingItem) {
-          await api.patch(`/blogs/${editingItem.id}/`, formData);
+          await api.patch(`/blogs/${editingItem.id}/`, finalFormData);
           await uploadImagesForId('blogs', editingItem.id);
         } else {
-          const res = await createBlog(formData);
+          const res = await createBlog(finalFormData);
           await uploadImagesForId('blogs', res.data.id);
         }
       }
@@ -345,9 +451,10 @@ function Dashboard() {
                         accept="image/*" 
                         style={{ display: 'none' }} 
                         ref={imageInputRef}
-                        onChange={e => {
+                        onChange={async e => {
                           if (e.target.files?.[0]) {
-                            setPendingImages([...pendingImages, e.target.files[0]]);
+                            const compressed = await compressImage(e.target.files[0]);
+                            setPendingImages([...pendingImages, compressed]);
                             e.target.value = ''; // reset
                           }
                         }} 
