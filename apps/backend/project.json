@@ -1,0 +1,23 @@
+{
+  "name": "backend",
+  "targets": {
+    "serve": {
+      "command": "npx -y varlock run -- uv run python manage.py runserver",
+      "options": {
+        "cwd": "apps/backend"
+      }
+    },
+    "migrate": {
+      "command": "npx -y varlock run -- uv run python manage.py migrate",
+      "options": {
+        "cwd": "apps/backend"
+      }
+    },
+    "makemigrations": {
+      "command": "npx -y varlock run -- uv run python manage.py makemigrations",
+      "options": {
+        "cwd": "apps/backend"
+      }
+    }
+  }
+}

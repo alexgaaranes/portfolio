@@ -1,0 +1,23 @@
+{
+  "name": "cms",
+  "targets": {
+    "dev": {
+      "command": "npx -y varlock run -- vite",
+      "options": {
+        "cwd": "apps/cms"
+      }
+    },
+    "build": {
+      "command": "npx -y varlock run -- tsc && vite build",
+      "options": {
+        "cwd": "apps/cms"
+      }
+    },
+    "preview": {
+      "command": "npx -y varlock run -- vite preview",
+      "options": {
+        "cwd": "apps/cms"
+      }
+    }
+  }
+}

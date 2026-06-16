@@ -1,0 +1,128 @@
+.cms-wrapper {
+  color: #333;
+}
+
+.cms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.cms-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.cms-modal header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.close-btn {
+  background: transparent;
+  color: #999;
+  font-size: 1.5rem;
+  padding: 0;
+}
+
+/* Fix EasyMDE visibility issues */
+.EasyMDEContainer {
+  color: #333 !important;
+}
+
+.editor-toolbar button {
+  color: #333 !important;
+}
+
+.editor-toolbar button.active, .editor-toolbar button:hover {
+  background: #f0f0f0 !important;
+}
+
+.CodeMirror {
+  color: #333 !important;
+  background: white !important;
+}
+
+.card-item {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+button.sm {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.image-upload-small label {
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px dashed #ccc;
+  font-size: 10px;
+  border-radius: 4px;
+}
+
+.del-btn {
+  background: rgba(229, 57, 53, 0.8) !important;
+  color: white !important;
+}
+
+/* 1:1 Preview styling */
+.editor-preview {
+  background: #121212 !important; /* Dark background for preview to match frontend */
+  color: #e0e0e0 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.rich-content {
+  line-height: 1.6;
+}
+
+.rich-content h1, .rich-content h2, .rich-content h3 {
+  color: #e53935;
+  margin-top: 1.5rem;
+}
+
+.rich-content p {
+  margin-bottom: 1rem;
+}
+
+.rich-content blockquote {
+  border-left: 4px solid #e53935;
+  padding: 0.5rem 0 0.5rem 1rem;
+  margin: 1.5rem 0;
+  color: #aaa;
+  background: rgba(229, 57, 53, 0.05);
+  border-radius: 0 4px 4px 0;
+}

@@ -1,0 +1,23 @@
+{
+  "name": "portfolio",
+  "targets": {
+    "dev": {
+      "command": "npx -y varlock run -- vite",
+      "options": {
+        "cwd": "apps/portfolio"
+      }
+    },
+    "build": {
+      "command": "npx -y varlock run -- tsc && vite build",
+      "options": {
+        "cwd": "apps/portfolio"
+      }
+    },
+    "preview": {
+      "command": "npx -y varlock run -- vite preview",
+      "options": {
+        "cwd": "apps/portfolio"
+      }
+    }
+  }
+}

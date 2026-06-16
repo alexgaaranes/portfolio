@@ -1,0 +1,11 @@
+{
+  "name": "sample-proj",
+  "private": true,
+  "scripts": {
+    "nx": "nx"
+  },
+  "devDependencies": {
+    "nx": "latest",
+    "varlock": "^1.6.0"
+  }
+}
